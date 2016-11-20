@@ -1,0 +1,90 @@
+;
+; ProcessDefender.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=Sample ; TODO: edit Class
+ClassGuid={78A1C341-4539-11d3-B88D-00C04FAD5171} ; TODO: edit ClassGuid
+Provider=%ManufacturerName%
+CatalogFile=ProcessDefender.cat
+DriverVer= ; TODO: set DriverVer in stampinf property pages
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+; ================= Class section =====================
+
+[ClassInstall32]
+Addreg=SampleClassReg
+
+[SampleClassReg]
+HKR,,,0,%ClassName%
+HKR,,Icon,,-5
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+ProcessDefender.sys  = 1,,
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NT$ARCH$
+
+[Standard.NT$ARCH$]
+%ProcessDefender.DeviceDesc%=ProcessDefender_Device, Root\ProcessDefender ; TODO: edit hw-id
+
+[ProcessDefender_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+ProcessDefender.sys
+
+;-------------- Service installation
+[ProcessDefender_Device.NT.Services]
+AddService = ProcessDefender,%SPSVCINST_ASSOCSERVICE%, ProcessDefender_Service_Inst
+
+; -------------- ProcessDefender driver install sections
+[ProcessDefender_Service_Inst]
+DisplayName    = %ProcessDefender.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\ProcessDefender.sys
+
+;
+;--- ProcessDefender_Device Coinstaller installation ------
+;
+
+[DestinationDirs]
+ProcessDefender_Device_CoInstaller_CopyFiles = 11
+
+[ProcessDefender_Device.NT.CoInstallers]
+AddReg=ProcessDefender_Device_CoInstaller_AddReg
+CopyFiles=ProcessDefender_Device_CoInstaller_CopyFiles
+
+[ProcessDefender_Device_CoInstaller_AddReg]
+HKR,,CoInstallers32,0x00010000, "WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll,WdfCoInstaller"
+
+[ProcessDefender_Device_CoInstaller_CopyFiles]
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll
+
+[SourceDisksFiles]
+WdfCoInstaller$KMDFCOINSTALLERVERSION$.dll=1 ; make sure the number matches with SourceDisksNames
+
+[ProcessDefender_Device.NT.Wdf]
+KmdfService =  ProcessDefender, ProcessDefender_wdfsect
+[ProcessDefender_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ManufacturerName="<Your manufacturer name>" ;TODO: Replace with your manufacturer name
+ClassName="Samples" ; TODO: edit ClassName
+DiskName = "ProcessDefender Installation Disk"
+ProcessDefender.DeviceDesc = "ProcessDefender Device"
+ProcessDefender.SVCDESC = "ProcessDefender Service"
