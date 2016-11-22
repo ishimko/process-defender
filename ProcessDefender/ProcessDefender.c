@@ -11,13 +11,23 @@ ACCESS_MASK FilterAccess(_In_ ACCESS_MASK OriginalDesiredAccess)
 	for (int i = 0; i < FORBIDDEN_OPERATIONS_COUNT; i++) 
 	{
 		ACCESS_MASK operation = FORBIDDEN_OPERATIONS[i];
-		if ((OriginalDesiredAccess & operation) == operation)
+		if (HasOperation(OriginalDesiredAccess, operation))
 		{
-			result &= ~operation;	
+			result = ExcludeOperation(OriginalDesiredAccess, operation);
 		}
 	}
 
 	return result;
+}
+
+inline BOOLEAN HasOperation(ACCESS_MASK DesiredAccess, ACCESS_MASK OperationToCheck) 
+{
+	return (DesiredAccess & OperationToCheck) == OperationToCheck;
+}
+
+inline ACCESS_MASK ExcludeOperation(ACCESS_MASK OriginalDesiredAccess, ACCESS_MASK OperationToExclude)
+{
+	return (OriginalDesiredAccess & (~OperationToExclude));
 }
 
 BOOLEAN IsProtectedProcess(_In_ const STRING* ProcessName)

@@ -15,4 +15,6 @@
 #define FORBIDDEN_OPERATIONS_COUNT 3
 
 ACCESS_MASK FilterAccess(_In_ ACCESS_MASK OriginalDesiredAccess);
+BOOLEAN HasOperation(ACCESS_MASK DesiredAccess, ACCESS_MASK OperationToCheck);
+ACCESS_MASK ExcludeOperation(ACCESS_MASK OriginalDesiredAccess, ACCESS_MASK OperationToExclude);
 BOOLEAN IsProtectedProcess(const STRING * ProcessName);
