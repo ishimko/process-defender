@@ -2,73 +2,78 @@
 #include "Driver.h"
 #include "Common.h"
 #include "ProcessDefender.h"
-#include "Functions.h"
+#include "DriverFunctions.h"
 
-PVOID RegistrationHandle = NULL;
+PDRIVER_OBJECT gDriverObject = NULL;
 
 NTSTATUS DriverEntry(_In_ PDRIVER_OBJECT DriverObject, _In_ PUNICODE_STRING RegistryPath)
 {
 	UNREFERENCED_PARAMETER(RegistryPath);
 
-	DbgPrint("Driver entry.\n");
-
 	UNICODE_STRING nameString, linkString;
 	PDEVICE_OBJECT deviceObject;
 	NTSTATUS status = STATUS_SUCCESS;
+	PVOID driverObjectExtension;
+	gDriverObject = DriverObject;
 
-	DriverObject->DriverUnload = ProcessDefenderUnload;
-	InitializeProcessDefender();
+	gDriverObject->DriverUnload = ProcessDefenderUnload;
 	
 	RtlInitUnicodeString(&nameString, L"\\Device\\"DRIVER_NAME);
-	status = IoCreateDevice(DriverObject, 0, &nameString, FILE_DEVICE_UNKNOWN, 0, FALSE, &deviceObject);
-	if (NT_SUCCESS(status))
-	{
-		deviceObject->Flags |= DO_DIRECT_IO;
+	status = IoCreateDevice(gDriverObject, 0, &nameString, FILE_DEVICE_UNKNOWN, 0, FALSE, &deviceObject);
+	ASSERT(NT_SUCCESS(status));
 
-		RtlInitUnicodeString(&linkString, L"\\DosDevices\\"DRIVER_NAME);
-		status = IoCreateSymbolicLink(&linkString, &nameString);
+	deviceObject->Flags |= DO_DIRECT_IO;
 
-		if (NT_SUCCESS(status)) {
-			DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = DriverDispatchIoctl;
-			DriverObject->MajorFunction[IRP_MJ_CREATE] = DispatchCreate;
+	RtlInitUnicodeString(&linkString, L"\\DosDevices\\"DRIVER_NAME);
+	status = IoCreateSymbolicLink(&linkString, &nameString);
+	ASSERT(NT_SUCCESS(status));
 
-			InstallDefenderCallback();
-		}
-		else {
-			DbgPrint("IoCreateSymbolicLink fail\n");
-		}
-	}
-	else {
-		DbgPrint("IoCreateDevice fail: ");
-	}	
+	gDriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = ProcessDefenderDispatchIoctl;
+	gDriverObject->MajorFunction[IRP_MJ_CREATE] = ProcessDefenderDispatchCreate;
+	gDriverObject->MajorFunction[IRP_MJ_CLOSE] = ProcessDefenderDispatchClose;
 
+	status = IoAllocateDriverObjectExtension(DriverObject, (PVOID)PROCESSDEFENDER_DRIVER_OBJECT_EXTENSION_ID, sizeof(DRIVER_DATA), &driverObjectExtension);
+	ASSERT(NT_SUCCESS(status));
+
+	InitializeDriverData((PDRIVER_DATA)driverObjectExtension);
+	InstallDefenderCallback();
+		
 	return status;
 }
 
 VOID ProcessDefenderUnload(_In_ PDRIVER_OBJECT DriverObject) 
 {
-	UNREFERENCED_PARAMETER(DriverObject);
-
 	UNICODE_STRING linkString;
 
 	RemoveDefenderCallback();
 
-	RtlInitUnicodeString(&linkString, L"\\DosDevices\\ProcDef");
+	RtlInitUnicodeString(&linkString, L"\\DosDevices\\"DRIVER_NAME);
 	IoDeleteSymbolicLink(&linkString);
 	IoDeleteDevice(DriverObject->DeviceObject);
 
-	DbgPrint("Unloaded.\n");
+	DbgPrint(DBG_PREFIX"unloaded\n");
+}
+
+VOID InitializeDriverData(_Inout_ PDRIVER_DATA DriverData)
+{
+	RtlZeroMemory(DriverData, sizeof(DRIVER_DATA));
+}
+
+PDRIVER_DATA GetDriverData()
+{
+	return (PDRIVER_DATA)IoGetDriverObjectExtension(gDriverObject, (PVOID)PROCESSDEFENDER_DRIVER_OBJECT_EXTENSION_ID);
 }
 
 NTSTATUS InstallDefenderCallback() 
 {
 	NTSTATUS result;	
+	PDRIVER_DATA driverData = GetDriverData();
 
 	OB_OPERATION_REGISTRATION OperationRegistration;
 	memset(&OperationRegistration, 0, sizeof(OperationRegistration));
 	OperationRegistration.ObjectType = PsProcessType;
 	OperationRegistration.Operations = OB_OPERATION_HANDLE_CREATE;
-	OperationRegistration.PreOperation = ObjectPreCallback;	
+	OperationRegistration.PreOperation = ProcessDefenderObjectPreCallback;	
 	
 	OB_CALLBACK_REGISTRATION CallbackRegistration;
 	memset(&CallbackRegistration, 0, sizeof(CallbackRegistration));
@@ -78,12 +83,15 @@ NTSTATUS InstallDefenderCallback()
 	RtlInitUnicodeString(&Altitude, L"XXXXXXX");
 	CallbackRegistration.Altitude = Altitude;
 	CallbackRegistration.OperationRegistration = &OperationRegistration;	
-
-	result = ObRegisterCallbacks(&CallbackRegistration, &RegistrationHandle);
+	
+	result = ObRegisterCallbacks(&CallbackRegistration, &(driverData->RegistrationHandle));
 
 	if (!NT_SUCCESS(result)) 
 	{
-		DbgPrint("ObRegisterCallbacks fail\n");
+		DbgPrint(DBG_PREFIX"callback registration failed\n");
+	}
+	else {
+		DbgPrint(DBG_PREFIX"callback registered\n");
 	}
 
 	return result;
@@ -91,29 +99,33 @@ NTSTATUS InstallDefenderCallback()
 
 NTSTATUS RemoveDefenderCallback()
 {
-	if (RegistrationHandle != NULL) 
+	PDRIVER_DATA driverData = GetDriverData();
+
+	if (driverData != NULL) 
 	{
-		ObUnRegisterCallbacks(RegistrationHandle);
-		RegistrationHandle = NULL;
+		ObUnRegisterCallbacks(driverData->RegistrationHandle);
+		driverData->RegistrationHandle = NULL;
 	}
+
 	return STATUS_SUCCESS;
 }
 
-OB_PREOP_CALLBACK_STATUS ObjectPreCallback(_In_ PVOID RegistrationContext, _In_ POB_PRE_OPERATION_INFORMATION OperationInformation)
+OB_PREOP_CALLBACK_STATUS ProcessDefenderObjectPreCallback(_In_ PVOID RegistrationContext, _In_ POB_PRE_OPERATION_INFORMATION OperationInformation)
 {
 	UNREFERENCED_PARAMETER(RegistrationContext);
 
-	STRING ProcessName;
+	STRING processName;
+	PPROCESS_DEFENDER_OBJECT processDefenderObject = &(GetDriverData()->ProcessDefenderObject);
 
-	LPCSTR ProcessNameStr = PsGetProcessImageFileName((PEPROCESS)OperationInformation->Object);
-	RtlInitString(&ProcessName, ProcessNameStr);
+	LPCSTR processNameStr = PsGetProcessImageFileName((PEPROCESS)OperationInformation->Object);
+	RtlInitString(&processName, processNameStr);
 
-	POB_PRE_CREATE_HANDLE_INFORMATION CreateHandleInformation = &(OperationInformation->Parameters->CreateHandleInformation);
-	if ((OperationInformation->Operation == OB_OPERATION_HANDLE_CREATE) && IsProtectedProcess(&ProcessName))
+	POB_PRE_CREATE_HANDLE_INFORMATION createHandleInformation = &(OperationInformation->Parameters->CreateHandleInformation);
+	if ((OperationInformation->Operation == OB_OPERATION_HANDLE_CREATE) && IsProtectedProcess(processDefenderObject, &processName))
 	{		
-		CreateHandleInformation->DesiredAccess = FilterAccess(CreateHandleInformation->OriginalDesiredAccess);
-		if (CreateHandleInformation->DesiredAccess != CreateHandleInformation->OriginalDesiredAccess) {
-			DbgPrint("Protection hit\n");
+		createHandleInformation->DesiredAccess = FilterAccess(createHandleInformation->OriginalDesiredAccess);
+		if (createHandleInformation->DesiredAccess != createHandleInformation->OriginalDesiredAccess) {
+			DbgPrint(DBG_PREFIX"protection hit\n");
 		}
 	}
 	

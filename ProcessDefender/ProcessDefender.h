@@ -17,8 +17,10 @@
 
 ACCESS_MASK FilterAccess(_In_ ACCESS_MASK OriginalDesiredAccess);
 BOOLEAN HasOperation(ACCESS_MASK DesiredAccess, ACCESS_MASK OperationToCheck);
-ACCESS_MASK ExcludeOperation(ACCESS_MASK OriginalDesiredAccess, ACCESS_MASK OperationToExclude);
-BOOLEAN IsProtectedProcess(const STRING * ProcessName);
+VOID ExcludeOperation(PACCESS_MASK DesiredAccess, ACCESS_MASK OperationToExclude);
+BOOLEAN IsProtectedProcess(_In_ PPROCESS_DEFENDER_OBJECT ProcessDefenderObject, const STRING * ProcessName);
 
-VOID InitializeProcessDefender();
-VOID UpdateProcessDefenderObject(PPROCESS_DEFENDER_OBJECT NewProcessDefenderObject);
+VOID InitializeProcessDefender(PPROCESS_DEFENDER_OBJECT ProcessDefenderObject);
+VOID EnableProcessDefender(PPROCESS_DEFENDER_OBJECT ProcessDefenderObject);
+VOID DisableProcessDefender(PPROCESS_DEFENDER_OBJECT ProcessDefenderObject);
+VOID SetProcessName(PPROCESS_DEFENDER_OBJECT ProcessDefenderObject, const CHAR processName[MAX_PATH]);

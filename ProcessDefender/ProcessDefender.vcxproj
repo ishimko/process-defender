@@ -120,6 +120,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
     <IncludePath>$(ProjectDir);$(IncludePath);</IncludePath>
+    <Inf2CatUseLocalTime>true</Inf2CatUseLocalTime>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
@@ -158,13 +159,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Driver.c" />
-    <ClCompile Include="Functions.c" />
+    <ClCompile Include="DriverFunctions.c" />
     <ClCompile Include="ProcessDefender.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
     <ClInclude Include="Driver.h" />
-    <ClInclude Include="Functions.h" />
+    <ClInclude Include="DriverFunctions.h" />
     <ClInclude Include="ProcessDefender.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
