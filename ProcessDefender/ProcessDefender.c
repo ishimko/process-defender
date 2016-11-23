@@ -1,8 +1,10 @@
 #include <ntddk.h>
 #include "ProcessDefender.h"
+#include "Common.h"
 
 ACCESS_MASK FORBIDDEN_OPERATIONS[FORBIDDEN_OPERATIONS_COUNT] = { PROCESS_TERMINATE, PROCESS_VM_WRITE, PROCESS_SET_INFORMATION };
-STRING ProtectedProcess = RTL_CONSTANT_STRING("calc.exe");
+//STRING ProtectedProcess = RTL_CONSTANT_STRING("calc.exe");
+PROCESS_DEFENDER_OBJECT ProcessDefenderObject;
 
 ACCESS_MASK FilterAccess(_In_ ACCESS_MASK OriginalDesiredAccess) 
 {
@@ -32,5 +34,23 @@ inline ACCESS_MASK ExcludeOperation(ACCESS_MASK OriginalDesiredAccess, ACCESS_MA
 
 BOOLEAN IsProtectedProcess(_In_ const STRING* ProcessName)
 {
-	return RtlEqualString(ProcessName, &ProtectedProcess, TRUE);
+	BOOLEAN result = FALSE;
+
+	if (ProcessDefenderObject.isActive) {
+		STRING ProtectedProcess;
+		RtlInitString(&ProtectedProcess, ProcessDefenderObject.protectedProcess);
+		result = RtlEqualString(ProcessName, &ProtectedProcess, TRUE);
+	}
+
+	return result;
+}
+
+VOID InitializeProcessDefender()
+{
+	RtlZeroMemory(&ProcessDefenderObject, sizeof(ProcessDefenderObject));
+}
+
+VOID UpdateProcessDefenderObject(_In_ PPROCESS_DEFENDER_OBJECT NewProcessDefenderObject)
+{
+	RtlCopyMemory(&ProcessDefenderObject, NewProcessDefenderObject, sizeof(ProcessDefenderObject));
 }

@@ -1,30 +1,66 @@
 #include <ntddk.h>
 #include "Driver.h"
+#include "Common.h"
 #include "ProcessDefender.h"
+#include "Functions.h"
+
+PVOID RegistrationHandle = NULL;
 
 NTSTATUS DriverEntry(_In_ PDRIVER_OBJECT DriverObject, _In_ PUNICODE_STRING RegistryPath)
 {
 	UNREFERENCED_PARAMETER(RegistryPath);
 
 	DbgPrint("Driver entry.\n");
-	
+
+	UNICODE_STRING nameString, linkString;
+	PDEVICE_OBJECT deviceObject;
+	NTSTATUS status = STATUS_SUCCESS;
+
 	DriverObject->DriverUnload = ProcessDefenderUnload;
+	InitializeProcessDefender();
+	
+	RtlInitUnicodeString(&nameString, L"\\Device\\"DRIVER_NAME);
+	status = IoCreateDevice(DriverObject, 0, &nameString, FILE_DEVICE_UNKNOWN, 0, FALSE, &deviceObject);
+	if (NT_SUCCESS(status))
+	{
+		deviceObject->Flags |= DO_DIRECT_IO;
 
-	EnableDefence();
+		RtlInitUnicodeString(&linkString, L"\\DosDevices\\"DRIVER_NAME);
+		status = IoCreateSymbolicLink(&linkString, &nameString);
 
-	return STATUS_SUCCESS;
+		if (NT_SUCCESS(status)) {
+			DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = DriverDispatchIoctl;
+			DriverObject->MajorFunction[IRP_MJ_CREATE] = DispatchCreate;
+
+			InstallDefenderCallback();
+		}
+		else {
+			DbgPrint("IoCreateSymbolicLink fail\n");
+		}
+	}
+	else {
+		DbgPrint("IoCreateDevice fail: ");
+	}	
+
+	return status;
 }
 
 VOID ProcessDefenderUnload(_In_ PDRIVER_OBJECT DriverObject) 
 {
 	UNREFERENCED_PARAMETER(DriverObject);
 
-	DisableDefence();
+	UNICODE_STRING linkString;
+
+	RemoveDefenderCallback();
+
+	RtlInitUnicodeString(&linkString, L"\\DosDevices\\ProcDef");
+	IoDeleteSymbolicLink(&linkString);
+	IoDeleteDevice(DriverObject->DeviceObject);
 
 	DbgPrint("Unloaded.\n");
 }
 
-NTSTATUS EnableDefence() 
+NTSTATUS InstallDefenderCallback() 
 {
 	NTSTATUS result;	
 
@@ -45,35 +81,15 @@ NTSTATUS EnableDefence()
 
 	result = ObRegisterCallbacks(&CallbackRegistration, &RegistrationHandle);
 
-	if (result == STATUS_SUCCESS) 
+	if (!NT_SUCCESS(result)) 
 	{
-		DbgPrint("Callback registered.\n");
-	}
-	else 
-	{
-		DbgPrint("Callback registration fail: ");
-		if (result == STATUS_FLT_INSTANCE_ALTITUDE_COLLISION) 
-		{
-			DbgPrint("Altitude collision.\n");
-		}
-		if (result == STATUS_INVALID_PARAMETER) 
-		{
-			DbgPrint("Invalid parameter.\n");
-		}
-		if (result == STATUS_ACCESS_DENIED) 
-		{
-			DbgPrint("The callback routines do not reside in a signed kernel binary image.\n");
-		}
-		if (result == STATUS_INSUFFICIENT_RESOURCES) 
-		{
-			DbgPrint("An attempt to allocate memory failed.\n");
-		}		
+		DbgPrint("ObRegisterCallbacks fail\n");
 	}
 
 	return result;
 }
 
-NTSTATUS DisableDefence()
+NTSTATUS RemoveDefenderCallback()
 {
 	if (RegistrationHandle != NULL) 
 	{
@@ -97,7 +113,7 @@ OB_PREOP_CALLBACK_STATUS ObjectPreCallback(_In_ PVOID RegistrationContext, _In_ 
 	{		
 		CreateHandleInformation->DesiredAccess = FilterAccess(CreateHandleInformation->OriginalDesiredAccess);
 		if (CreateHandleInformation->DesiredAccess != CreateHandleInformation->OriginalDesiredAccess) {
-			DbgPrint("%s protected\n", ProcessNameStr);
+			DbgPrint("Protection hit\n");
 		}
 	}
 	

@@ -5,6 +5,8 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ProcessDefender", "ProcessDefender\ProcessDefender.vcxproj", "{03309CBD-5FA5-45C6-B0CF-3E6EDADD6D2D}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ProcessDefenderConfigurator", "ProcessDefenderConfigurator\ProcessDefenderConfigurator.vcxproj", "{44B2F13C-6376-411D-B2E6-16BBFEA38EDE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
@@ -41,6 +43,18 @@ Global
 		{03309CBD-5FA5-45C6-B0CF-3E6EDADD6D2D}.Release|x86.ActiveCfg = Release|Win32
 		{03309CBD-5FA5-45C6-B0CF-3E6EDADD6D2D}.Release|x86.Build.0 = Release|Win32
 		{03309CBD-5FA5-45C6-B0CF-3E6EDADD6D2D}.Release|x86.Deploy.0 = Release|Win32
+		{44B2F13C-6376-411D-B2E6-16BBFEA38EDE}.Debug|ARM.ActiveCfg = Debug|Win32
+		{44B2F13C-6376-411D-B2E6-16BBFEA38EDE}.Debug|ARM64.ActiveCfg = Debug|Win32
+		{44B2F13C-6376-411D-B2E6-16BBFEA38EDE}.Debug|x64.ActiveCfg = Debug|x64
+		{44B2F13C-6376-411D-B2E6-16BBFEA38EDE}.Debug|x64.Build.0 = Debug|x64
+		{44B2F13C-6376-411D-B2E6-16BBFEA38EDE}.Debug|x86.ActiveCfg = Release|Win32
+		{44B2F13C-6376-411D-B2E6-16BBFEA38EDE}.Debug|x86.Build.0 = Release|Win32
+		{44B2F13C-6376-411D-B2E6-16BBFEA38EDE}.Release|ARM.ActiveCfg = Release|Win32
+		{44B2F13C-6376-411D-B2E6-16BBFEA38EDE}.Release|ARM64.ActiveCfg = Release|Win32
+		{44B2F13C-6376-411D-B2E6-16BBFEA38EDE}.Release|x64.ActiveCfg = Release|x64
+		{44B2F13C-6376-411D-B2E6-16BBFEA38EDE}.Release|x64.Build.0 = Release|x64
+		{44B2F13C-6376-411D-B2E6-16BBFEA38EDE}.Release|x86.ActiveCfg = Release|Win32
+		{44B2F13C-6376-411D-B2E6-16BBFEA38EDE}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ntddk.h>
+#include "Common.h"
 
 #define PROCESS_CREATE_PROCESS	(0x0080)
 #define PROCESS_CREATE_THREAD	(0x0002)
@@ -18,3 +19,6 @@ ACCESS_MASK FilterAccess(_In_ ACCESS_MASK OriginalDesiredAccess);
 BOOLEAN HasOperation(ACCESS_MASK DesiredAccess, ACCESS_MASK OperationToCheck);
 ACCESS_MASK ExcludeOperation(ACCESS_MASK OriginalDesiredAccess, ACCESS_MASK OperationToExclude);
 BOOLEAN IsProtectedProcess(const STRING * ProcessName);
+
+VOID InitializeProcessDefender();
+VOID UpdateProcessDefenderObject(PPROCESS_DEFENDER_OBJECT NewProcessDefenderObject);
