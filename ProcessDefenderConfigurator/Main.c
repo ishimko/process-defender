@@ -10,6 +10,8 @@
 #define DISABLE_PARAM "-d"
 
 void DisplayHelp();
+int ProcessEnableParam(int argc, char * argv[]);
+int ProcessDisableParam(int argc, char * argv[]);
 bool EnableProcessDefender(char processName[MAX_PATH]);
 bool DisableProcessDefender();
 bool SendToDriver(PPROCESS_DEFENDER_OBJECT pProcessDefenderObject);
@@ -24,28 +26,11 @@ int main(int argc, char *argv[])
 	else {
 		char* commandParam = argv[1];
 		if (strcmp(commandParam, ENABLE_PARAM) == 0) {
-			if (argc == MAX_PARAMS_COUNT) {
-				char* processName = argv[2];
-				if (strlen(processName) <= MAX_PATH) {
-					result = EnableProcessDefender(processName) ? 0 : 1;
-					if (result == 0) {
-						puts("Enable request sent.");
-					}
-				}
-				else {
-					fprintf(stderr, "Too long process name.\n");
-					result = 1;
-				}
-			}
-			else {
-				DisplayHelp();
-			}
+			result = ProcessEnableParam(argc, argv);
+			
 		}
 		else if (strcmp(commandParam, DISABLE_PARAM) == 0) {
-			result = DisableProcessDefender() ? 0 : 1;
-			if (result == 0) {
-				puts("Disable request sent.");
-			}
+			result = ProcessDisableParam(argc, argv);
 		}
 		else {
 			DisplayHelp();
@@ -61,6 +46,49 @@ void DisplayHelp()
 	puts("Usage:");
 	puts("\t"ENABLE_PARAM" <process_name> - enable defender for specified process name");
 	puts("\t"DISABLE_PARAM" - disable defender");
+}
+
+int ProcessEnableParam(int argc, char *argv[])
+{
+	int result = 0;
+	char* processName;
+
+	if (argc == MAX_PARAMS_COUNT) {
+		processName = argv[2];
+		if (strlen(processName) <= MAX_PATH) {
+			if (EnableProcessDefender(processName)) {
+				puts("Enable request sent.");
+			}
+			else {
+				result = 1;
+			}
+		} else {
+			fprintf(stderr, "Too long process name.\n");
+			result = 1;
+		}
+	} else {
+		DisplayHelp();
+		result = 1;
+	}
+
+	return result;
+}
+
+int ProcessDisableParam(int argc, char *argv[])
+{
+	int result = 0;
+	if (argc == MIN_PARAMS_COUNT) {
+		if (DisableProcessDefender()) {
+			puts("Disable request sent.");
+		} else {
+			result = 1;
+		}
+	} else {
+		DisplayHelp();
+		result = 1;
+	}
+	
+	return result;
 }
 
 bool EnableProcessDefender(char processName[MAX_PATH])
