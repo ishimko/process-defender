@@ -70,13 +70,13 @@ NTSTATUS InstallDefenderCallback()
 	PDRIVER_DATA driverData = GetDriverData();
 
 	OB_OPERATION_REGISTRATION OperationRegistration;
-	memset(&OperationRegistration, 0, sizeof(OperationRegistration));
+	RtlZeroMemory(&OperationRegistration, sizeof(OperationRegistration));
 	OperationRegistration.ObjectType = PsProcessType;
 	OperationRegistration.Operations = OB_OPERATION_HANDLE_CREATE;
 	OperationRegistration.PreOperation = ProcessDefenderObjectPreCallback;	
 	
 	OB_CALLBACK_REGISTRATION CallbackRegistration;
-	memset(&CallbackRegistration, 0, sizeof(CallbackRegistration));
+	RtlZeroMemory(&CallbackRegistration, sizeof(CallbackRegistration));
 	CallbackRegistration.Version = OB_FLT_REGISTRATION_VERSION;
 	CallbackRegistration.OperationRegistrationCount = 1;
 	UNICODE_STRING Altitude;
