@@ -15,7 +15,7 @@ int main()
 	PROCESS_DEFENDER_OBJECT processDefenderObject;
 	memset(&processDefenderObject, 0, sizeof(processDefenderObject));
 	processDefenderObject.isActive = TRUE;
-	strcpy_s(processDefenderObject.protectedProcess, strlen("notepad.exe"), "notepad.exe");
+	strcpy_s(processDefenderObject.protectedProcess, MAX_PATH, "notepad.exe");
 
 	if (controlDriver != INVALID_HANDLE_VALUE)
 	{
